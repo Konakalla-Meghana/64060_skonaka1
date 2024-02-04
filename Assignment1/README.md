@@ -9,12 +9,11 @@ This assignment contains the following tasks:
 - The 'ucimlrepo' library is used to directly fetch the dataset.
 
 ### 2. Import the Dataset into Python 
-- Features and targets are loaded into pandas Dataframe for analysis.
+- Features are loaded into pandas Dataframe for analysis.
 
 ### 3. Descriptive Statistics 
-- Descriptive statistics are computed selections of quantitative and categorical variables.
-- Information about job roles and education level is presented.
-- For quantitative variables, the describe() function is used.
+- Firstly, I identified the qualitative and quantitative variables present in the dataset. Qualitative variables are of data type "object," while quantitative variables are either of type "int" or "float."
+- For descriptive statistics, the describe() function was employed.
 
 ### 4. Variable Transformation 
 - The balance Variable is transformed using a square root.
@@ -54,5 +53,5 @@ This assignment contains the following tasks:
 
 ## Repository Structure
 
-- **FML_Assignment(1).ipynb**: Google Colab notebook containing the Python code.
+- **FML_Assignment.ipynb**: Google Colab notebook containing the Python code.
 - **README.md**: This file, provides instructions and information about the assignment.
