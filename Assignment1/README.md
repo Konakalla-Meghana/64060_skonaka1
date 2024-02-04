@@ -32,7 +32,7 @@ This assignment contains the following tasks:
 #### Histogram of Age 
 - Majority of individuals fall within a certain age range, suggesting a target age group.
 #### Scatterplot of Age vs. Balance
-- No clear linear correlation, but patterns or clusters may be observed.
+- People with higher ages tend to have higher balances; however, there is a significant amount of variability in the data. Notably, there are many individuals with lower ages who exhibit higher balances. As age increases beyond 60-70, the balances tend to decrease again
 
 ### Libraries used
 - `ucimlrepo`: Library for fetching datasets from the UCI Machine Learning Repository.
