@@ -1,0 +1,173 @@
+---
+title: "Assignment"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-02-19"
+---
+
+# Introduction
+
+The file UniversalBank.csv contains data on 5000 customers. The dataset includes customer demographic information (age, income, etc.), the customer’s relationship with the bank (mortgage, securities account, etc.), and the customer response to the last personal loan campaign (Personal Loan). Among these 5000 customers, only 480 (= 9.6%) accepted the personal loan that was offered to them in the earlier campaign.
+### Load necessary libraries
+```{r}
+library(caret)
+library(class)
+library(dplyr)
+```
+### Read the data
+```{r}
+# Load the data
+setwd("/Users/meghana/Downloads")
+Bank_data = read.csv("UniversalBank.csv")
+# Check the structure and summary of the dataset
+str(Bank_data)
+summary(Bank_data)
+```
+### Romove ID and ZIP Code as they are not predictors
+```{r}
+# Drop unnecessary columns (ID and ZIP code)
+Bank_data <- Bank_data[, -c(1, 5)]
+summary(Bank_data)
+```
+
+### Split Data into 60% training and 40% validation. There are many ways to do this. We will look at 2 different ways. Before we split, let us transform categorical variables into dummy variables
+
+###Only Education needs to be converted to factor
+```{r}
+Bank_data$Education <- as.factor(Bank_data$Education)
+head(Bank_data$Education)
+```
+### Now, Convert Education to Dummy Variables
+
+```{r}
+dummy_groups <- dummyVars(~., data = Bank_data)
+Bank_data <- as.data.frame(predict(dummy_groups, Bank_data))
+```
+
+### Data Partitioning
+### Overview
+Partition the data into training (60%) and validation (40%) sets.
+```{r}
+set.seed(1)
+train_indices <- sample(row.names(Bank_data), 0.6 * nrow(Bank_data))
+valid_indices <- setdiff(row.names(Bank_data), train_indices)
+
+train_df <- Bank_data[train_indices, ]
+head(train_df)
+valid_df <- Bank_data[valid_indices, ]
+tail(valid_df)
+```
+
+### Normalize Data
+```{r}
+norm_values <- preProcess(train_df[, -which(names(train_df) %in% c("Personal.Loan"))], method = c("center", "scale"))
+train_norm <- predict(norm_values, train_df[, -which(names(train_df) %in% c("Personal.Loan"))])
+valid_norm <- predict(norm_values, valid_df[, -which(names(valid_df) %in% c("Personal.Loan"))])
+head(train_norm)
+tail(valid_norm)
+```
+
+### Consider a new customer
+```{r}
+new_customer <- data.frame(
+  Age = 40,
+  Experience = 10,
+  Income = 84,
+  Family = 2,
+  CCAvg = 2,
+  Education_1 = 0,
+  Education_2 = 1,
+  Education_3 = 0,
+  Mortgage = 0,
+  `Securities Account` = 0,
+  `CD Account` = 0,
+  Online = 1,
+  `Credit Card` = 1
+)
+```
+
+### Normalize the new customer data using the same preprocessing
+```{r}
+
+train_norm <- train_df[,-10] # Note that Personal Income is the 10th variable
+valid_norm <- valid_df[,-10]
+
+norm_values <- preProcess(train_df[, -10], method=c("center", "scale"))
+train_norm <- predict(norm_values, train_df[, -10])
+valid_norm <- predict(norm_values, valid_df[, -10])
+norm_values
+head(train_norm)
+tail(valid_norm)
+```
+
+### Perform k-NN classification with k=1 for the new customer
+```{r}
+# Perform k-NN classification with k=1 for the new customer
+knn_pred_new_customer <- knn(train = train_norm, test = new_customer, cl = train_df$Personal.Loan, k = 1)
+knn_pred_new_customer
+```
+### what is a choice of k that balances between overfitting and ignoring the predictor information?
+
+```{r}
+accuracy <- rep(0, 15)
+for (i in 1:15) {
+  knn_pred <- knn(train = train_norm, test = valid_norm, cl = train_df$Personal.Loan, k = i)
+  accuracy[i] <- confusionMatrix(knn_pred, as.factor(valid_df$Personal.Loan), positive = "1")$overall[1]
+}
+best_k <- which.max(accuracy)
+best_k
+```
+
+
+## Validation Confusion Matrix
+### Show the confusion matrix for the validation data that results from using the best k.
+
+```{r}
+knn_pred_valid_best_k <- knn(train = train_norm, test = valid_norm, cl = train_df$Personal.Loan, k = best_k)
+conf_matrix_valid <- confusionMatrix(knn_pred_valid_best_k, as.factor(valid_df$Personal.Loan), positive = "1")
+```
+
+### Repartition the data into training, validation, and test sets (50% : 30% : 20%)
+
+```{r}
+train_indices <- sample(1:nrow(Bank_data), 0.5 * nrow(Bank_data))
+valid_test_indices <- setdiff(1:nrow(Bank_data), train_indices)
+valid_indices <- sample(valid_test_indices, 0.3 * length(valid_test_indices))
+test_indices <- setdiff(valid_test_indices, valid_indices)
+
+train_df <- Bank_data[train_indices, ]
+valid_df <- Bank_data[valid_indices, ]
+test_df <- Bank_data[test_indices, ]
+```
+
+### Normalize the data for each set
+```{r}
+norm_values <- preProcess(train_df[, -which(names(train_df) %in% c("Personal.Loan"))], method = c("center", "scale"))
+train_norm <- predict(norm_values, train_df[, -which(names(train_df) %in% c("Personal.Loan"))])
+valid_norm <- predict(norm_values, valid_df[, -which(names(valid_df) %in% c("Personal.Loan"))])
+test_norm <- predict(norm_values, test_df[, -which(names(test_df) %in% c("Personal.Loan"))])
+```
+
+### Perform k-NN classification with the best k for the test set
+```{r}
+knn_pred_test_best_k <- knn(train = train_norm, test = test_norm, cl = train_df$Personal.Loan, k = best_k)
+knn_pred_test_best_k
+```
+
+### Create confusion matrices for each set
+```{r}
+conf_matrix_train <- confusionMatrix(knn(train = train_norm, test = train_norm, cl = train_df$Personal.Loan, k = best_k), as.factor(train_df$Personal.Loan), positive = "1")
+conf_matrix_valid <- confusionMatrix(knn(train = train_norm, test = valid_norm, cl = train_df$Personal.Loan, k = best_k), as.factor(valid_df$Personal.Loan), positive = "1")
+conf_matrix_test <- confusionMatrix(knn_pred_test_best_k, as.factor(test_df$Personal.Loan), positive = "1")
+```
+
+### Display the confusion matrices
+```{r}
+conf_matrix_train
+conf_matrix_valid
+conf_matrix_test
+```
+```
+
+
