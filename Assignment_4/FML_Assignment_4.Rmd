@@ -1,0 +1,113 @@
+---
+title: "FML_Assignment_4"
+output:
+  html_document: default
+  pdf_document: default
+date: "2024-03-14"
+---
+
+# Cluster Analysis of Pharmaceutical Firms
+## Introduction
+### In this analysis, we perform cluster analysis on a dataset containing information about pharmaceutical firms. We focus on using numerical variables (1 to 9) to cluster the 21 firms. Various choices made in conducting the cluster analysis, such as weights for different variables, the specific clustering algorithm(s) used, the number of clusters formed, are justified.
+
+```{r}
+#Importing Required Packages
+library(readr)
+#Importing Data Set
+data <- read_csv("/Users/meghana/Downloads/Pharmaceuticals.csv")
+```
+
+
+### Load necessary libraries
+```{r}
+library("ggplot2")
+library("factoextra")
+library("flexclust")
+library("cluster")
+library("tidyverse")
+#library("fvi_dist")
+library("cluster")
+```
+#### Question(A) Use only the numerical variables (1 to 9) to cluster the 21 firms. Justify the various choices made in conducting the cluster analysis, such as weights for different variables, the specific clustering algorithm(s) used, the number of clusters formed, and so on.
+```{r}
+# Removing null values in data (data cleaning)
+Pharma_data =  na.omit(data)
+Pharma_data
+
+row.names <- Pharma_data[,1]
+pharma_data1 <- Pharma_data[,3:11]#numerical variable from 3 to 11
+head(pharma_data1)
+pharma_data2 <- scale(pharma_data1)
+head(pharma_data2)
+#Determination of Number of Clusters
+#We determine the optimal number of clusters using different methods such as the Elbow Method, Silhouette Method, and Gap Stat Method.
+fviz_nbclust(pharma_data2, kmeans, method = "wss") +labs(subtitle = "Elbow Method")
+fviz_nbclust(pharma_data2, kmeans, method = "silhouette") + labs(subtitle = "Silhouette Method")
+fviz_nbclust(pharma_data2, kmeans, method = "gap_stat") + labs(subtitle = "Gap Stat Method")
+```
+
+```{r}
+set.seed(64060)
+k_5 <- kmeans(pharma_data2, centers = 5, nstart = 25)
+k_5 $centers
+fviz_cluster(k_5, data = pharma_data2)
+k_5
+Dist <- dist(pharma_data2, method = "euclidian")
+#fvi_dist(Dist)
+FITT <- kmeans(pharma_data2,5)
+aggregate(pharma_data2,by = list(FITT$cluster), FUN = mean)
+pharma_data3 <- data.frame(pharma_data2,FITT$cluster)
+pharma_data3
+clusplot(pharma_data2,FITT$cluster, color = TRUE, shade = TRUE, 
+ labels = 2,
+ lines = 0)
+```
+
+#### Question(B) Interpret the clusters with respect to the numerical variables used in forming the clusters.
+
+```{r}
+aggregate(pharma_data2, by = list(FITT$cluster), FUN = mean)
+Pharmacy <- data.frame(pharma_data2,k_5$cluster)
+Pharmacy
+```
+#### Question(C) Is there a pattern in the clusters with respect to the numerical variables (10 to 12)? (those not used in forming the clusters)
+```{r}
+Pharma <- data[12:14] %>% mutate(Clusters=k_5$cluster)
+ggplot(Pharma, mapping = aes(factor(Clusters), fill =Median_Recommendation))+geom_bar(position='dodge')+labs(x ='Clusters')
+ggplot(Pharma, mapping = aes(factor(Clusters),fill = Location))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+ggplot(Pharma, mapping = aes(factor(Clusters),fill = Exchange))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+```
+
+
+#### Interpretation : 
+#### We can see a minor pattern in the clusters from the graphs above
+
+#### The cluster 1 has distinct Hold and Moderate Buy medians, as well as a different count from the US and Germany, but the businesses are evenly dispersed on the AMEX,NASDAQ and NYSE.
+
+#### Hold and Moderate buy medians are similarly distributed in Cluster 2
+#### the United States and Canada are listed on the NYSE.
+
+#### Cluster 3 has similar Moderate Buy and Sell medians, but a different count from Cluster.
+#### France, Ireland, and the United States are all listed on the NYSE
+
+#### Cluster 4 offers Hold, Moderate Buy, Moderate Sell, and Strong Buy options.
+#### The median for the hold is the highest. They are from the United States, the United Kingdom, and Switzerland, and they are listed in NYSE
+
+#### Cluster 5 has the same hold and mdoerate purchase medians and is spread in
+#### countries UK and US and is also listed in NYSE
+
+
+#### Question(D) Provide an appropriate name for each cluster using any or all of the variables in the dataset.
+
+```{r}
+#Naming clusters
+#After performing cluster analysis on the pharmaceutical firms dataset,Assigning  descriptive names to each cluster based on their characteristics.
+
+#Cluster 1 :- Buy Cluster
+#Cluster 2 :- Sceptical Cluster
+#Cluster 3 :- Moderate Buy Cluster
+#Cluster 4 :- Hold Cluster
+#Cluster 5 :- High Hold Cluster
+```
+
+
