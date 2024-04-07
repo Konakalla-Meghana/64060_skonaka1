@@ -1,0 +1,149 @@
+---
+title: "FML_Assignment_5"
+output: html_document
+date: "2024-04-04"
+---
+
+```{r}
+setwd("/Users/meghana/Downloads")
+data = read.csv("Cereals .csv")
+```
+```{r}
+head(data)
+```
+```{r}
+#Installing necessary packages
+#install.packages("cluster")
+#install.packages("caret")
+#install.packages("dendextend")
+#install.packages("knitr")
+#install.packages("factoextra")
+#install.packages("readr")
+```
+
+```{r}
+library("cluster")
+library("caret")
+library("dendextend")
+library("knitr")
+library("factoextra")
+library("readr")
+```
+
+```{r}
+data <- data.frame(data[,4:16])
+#Removing Null values
+data = na.omit(data)
+```
+
+```{r}
+#Normalizing data
+Cereals_normalise <- scale(data)
+```
+
+```{r}
+#Use the normalized data to do hierarchical clustering using the Euclidean Dist technique.
+Dist <- dist(Cereals_normalise, method = "euclidean")
+H_clust <- hclust(Dist, method = "complete")
+```
+
+```{r}
+#the dendogram plotting
+plot(H_clust, cex = 0.7, hang = -1)
+```
+```{r}
+#Clustering with single linkage, full linkage, and the Agnes function,average linkage and Ward.
+single_Hclust <- agnes(Cereals_normalise, method = "single")
+complete_Hclust <- agnes(Cereals_normalise, method = "complete")
+average_Hclust <- agnes(Cereals_normalise, method = "average")
+ward_Hclust <- agnes(Cereals_normalise, method = "ward")
+```
+
+```{r}
+#Choosing the most efficient course of action
+print(single_Hclust$ac)
+print(complete_Hclust$ac)
+print(average_Hclust$ac)
+print(ward_Hclust$ac)
+#The ward strategy is the most successful one, as shown by its value of 0.9046042, which is evident given the facts provided.
+```
+
+### 2- Choosing the clusters:
+```{r}
+pltree(ward_Hclust, cex = 0.5, hang = -1, main = "Dendrogram of agnes (Using Ward)")
+rect.hclust(ward_Hclust, k = 5, border = 2:7)
+S_Group <- cutree(ward_Hclust, k=5)
+D_frame_2 <- as.data.frame(cbind(Cereals_normalise,S_Group))
+```
+
+```{r}
+#determining the stability and structure of the clusters. 
+fviz_cluster(list(data = D_frame_2, cluster = S_Group))
+```
+```{r}
+#Building Partitions
+set.seed(123)
+partition_1<- data[1:50,]
+partition_2 <- data[51:74,]
+```
+
+```{r}
+#Performing Hierarchical Clustering while considering k = 5.
+single_sb <- agnes(scale(partition_1), method = "single")
+complete_sb <- agnes(scale(partition_1), method = "complete")
+average_sb <- agnes(scale(partition_1), method = "average")
+ward_sb <- agnes(scale(partition_1), method = "ward")
+cbind(single=single_sb$ac , complete=complete_sb$ac , average= average_sb$ac , ward= ward_sb$ac)
+pltree(ward_sb, cex = 0.6, hang = -1, main = "Dendogram of Agnes with Partitioned Data (Using Ward)")
+rect.hclust(ward_sb, k = 5, border = 2:7)
+cut_2 <- cutree(ward_sb, k = 5)
+```
+
+```{r}
+#the centroids are calculated.
+Sb_result <- as.data.frame(cbind(partition_1, cut_2))
+Sb_result[Sb_result$cut_2==1,]
+one_centroid <- colMeans(Sb_result[Sb_result$cut_2==1,])
+Sb_result[Sb_result$cut_2==2,]
+two_centroid <- colMeans(Sb_result[Sb_result$cut_2==2,])
+Sb_result[Sb_result$cut_2==3,]
+three_centroid <- colMeans(Sb_result[Sb_result$cut_2==3,])
+Sb_result[Sb_result$cut_2==4,]
+four_centroid <- colMeans(Sb_result[Sb_result$cut_2==4,])
+centroids <- rbind(one_centroid, two_centroid, three_centroid, four_centroid)
+x2 <- as.data.frame(rbind(centroids[,-14], partition_2))
+```
+```{r}
+#figuring out the Dist.
+Dist_1 <- get_dist(x2)
+Matrix_1 <- as.matrix(Dist_1)
+dataframe1 <- data.frame(data=seq(1,nrow(partition_2),1), Clusters = rep(0,nrow(partition_2)))
+for(i in 1:nrow(partition_2)) 
+  {dataframe1[i,2] <- which.min(Matrix_1[i+4, 1:4])}
+dataframe1
+cbind(D_frame_2$S_Group[51:74], dataframe1$Clusters)
+table(D_frame_2$S_Group[51:74] == dataframe1$Clusters)
+```
+
+### 3- The elementary public schools would like to choose a set of Cereals to include in their daily cafeterias. Every day a different cereal is offered, but all Cereals should support a healthy diet. For this goal, you are requested to find a cluster of “healthy Cereals''
+
+```{r}
+#Clustering Healthy Cereals.
+Healthy_Cereals <- data
+Healthy_Cereals_RD <- na.omit(Healthy_Cereals)
+clust <- cbind(Healthy_Cereals_RD, S_Group)
+clust[clust$S_Group==1,]
+clust[clust$S_Group==2,]
+clust[clust$S_Group==3,]
+clust[clust$S_Group==4,]
+```
+
+```{r}
+#Mean ratings are used to select the best cluster.
+mean(clust[clust$S_Group==1,"rating"])
+mean(clust[clust$S_Group==2,"rating"])
+mean(clust[clust$S_Group==3,"rating"])
+mean(clust[clust$S_Group==4,"rating"])
+```
+#### Cluster 1 may be chosen based on the data mentioned above because it is the highest.
+#### Therefore, Group 1 may be considered of as the cluster for a healthy diet.
